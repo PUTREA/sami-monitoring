@@ -1,0 +1,16 @@
+#!/usr/bin/env node
+
+const app = require("../app");  // Import app.js
+const http = require("http");
+
+// Gunakan port dari environment atau default 3000
+const port = process.env.PORT || 3000;
+app.set("port", port);
+
+// Buat server HTTP
+const server = http.createServer(app);
+
+// Jalankan server
+server.listen(port, () => {
+  console.log(`Server running at http://localhost:${port}/`);
+});
