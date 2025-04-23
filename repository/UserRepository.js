@@ -22,7 +22,22 @@ const getAllUsers = async () => {
         throw error; // Melemparkan error untuk ditangani di tempat lain
     }
 }
-
+const createUser = async (userData) => {
+    try {
+        const result = await db.query(
+            'INSERT INTO users (nik, name, email, password, role_id, createdAt, updatedAt) VALUES (:nik, :name, :email, :password, :role_id, NOW(), NOW())',
+            {
+                replacements: userData,
+                type: QueryTypes.INSERT
+            }
+        );
+        return userData;
+    } catch (error) {
+        console.error('Error creating user:', error);
+        throw error;
+    }
+};
 module.exports = {
-    getAllUsers
+    getAllUsers,
+    createUser
 };
