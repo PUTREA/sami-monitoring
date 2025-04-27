@@ -37,7 +37,31 @@ const createUser = async (userData) => {
         throw error;
     }
 };
+const bulkCreateUsers = async (users) => {
+    try {
+        const result = await db.query(
+            'INSERT INTO users (nik, name, email, password, role_id, createdAt, updatedAt) VALUES ?',
+            {
+                replacements: [users.map(user => [
+                    user.nik,
+                    user.name,
+                    user.email,
+                    user.password,
+                    user.role_id,
+                    new Date(),
+                    new Date()
+                ])],
+                type: QueryTypes.INSERT
+            }
+        );
+        return users;
+    } catch (error) {
+        console.error('Error bulk creating users:', error);
+        throw error;
+    }
+};
 module.exports = {
     getAllUsers,
-    createUser
+    createUser,
+    bulkCreateUsers
 };

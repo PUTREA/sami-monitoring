@@ -189,9 +189,70 @@ const createUser = async (req, res) => {
         });
     }
 };
+
+const importUsersFromExcel = async (req, res) => {
+    try {
+        console.log('Files received:', req.files); // Debug log
+
+        if (!req.files || Object.keys(req.files).length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: "No files were uploaded"
+            });
+        }
+
+        const file = req.files.file;
+        console.log('File details:', file); // Debug log
+
+        // Validate file type
+        if (!file.name.match(/\.(xlsx|xls)$/)) {
+            return res.status(400).json({
+                success: false,
+                message: "Please upload a valid Excel file (xlsx or xls)"
+            });
+        }
+
+        const workbook = new Excel.Workbook();
+        await workbook.xlsx.load(file.data);
+        
+        // Rest of your existing code...
+        const worksheet = workbook.getWorksheet(1);
+        const users = [];
+        worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
+            if (rowNumber > 1) { // Skip header row
+                const user = {
+                    nik: row.getCell(1).value,
+                    name: row.getCell(2).value,
+                    email: row.getCell(3).value,
+                    password: bcrypt.hashSync('default123', 10), // Default password
+                    role_id: row.getCell(4).value
+                };
+                users.push(user);
+            }
+        });
+
+        // Save users to database
+        const savedUsers = await userRepository.bulkCreateUsers(users);
+
+        res.status(200).json({
+            success: true,
+            message: `Successfully imported ${savedUsers.length} users`,
+            data: savedUsers
+        });
+
+    } catch (error) {
+        console.error('Import error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to import users',
+            error: error.message
+        });
+    }
+};
 module.exports = {
     getAllUsers,
     exportUsersToExcel,
     exportUsersToPDF,
-    createUser
+    createUser,
+    importUsersFromExcel
 };
