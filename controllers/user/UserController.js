@@ -110,7 +110,7 @@ const exportUsersToPDF = async (req, res) => {
         doc.text('NIK', colPositions.nik, doc.y);
         doc.text('Nama', colPositions.name, doc.y - doc.currentLineHeight());
         doc.text('Email', colPositions.email, doc.y - doc.currentLineHeight());
-        doc.text('Role', colPositions.role, doc.y - doc.currentLineHeight(), { width: roleColumnWidth, align: 'center' });
+        doc.text('Role id', colPositions.role, doc.y - doc.currentLineHeight(), { width: roleColumnWidth, align: 'center' });
         
         doc.moveDown();
 
@@ -144,26 +144,55 @@ const exportUsersToPDF = async (req, res) => {
 
 const createUser = async (req, res) => {
     try {
-        const { nik, name, email, password, role_id } = req.body;
+        const { nik, name, email, password, level } = req.body;
 
         // Validate required fields
-        if (!nik || !name || !email || !password || !role_id) {
+        if (!nik || !name || !email || !password || !level) {
             return res.status(400).json({
                 success: false,
                 message: "Semua field harus diisi"
             });
         }
 
-        // Hash password
-        const hashedPassword = await bcrypt.hash(password, 10);
+        // Validate level
+        const validLevels = ['SUPERVISOR', 'LINE LEADER', 'TEKNISI'];
+        if (!validLevels.includes(level.toUpperCase())) {
+            return res.status(400).json({
+                success: false,
+                message: "Level harus SUPERVISOR, LINE LEADER, atau TEKNISI"
+            });
+        }
+
+        // Generate kode from name (first letter of each word)
+        const kode = name.split(' ')
+            .map(word => word.substring(0, 1))
+            .join('')
+            .toUpperCase();
+
+        // Determine kodeColor based on level
+        let kodeColor;
+        switch(level.toUpperCase()) {
+            case 'SUPERVISOR':
+                kodeColor = 'yellow';
+                break;
+            case 'LINE LEADER':
+                kodeColor = 'red';
+                break;
+            case 'TEKNISI':
+                kodeColor = 'blue';
+                break;
+        }
 
         // Create user data object
         const userData = {
             nik,
             name,
             email,
-            password: hashedPassword,
-            role_id
+            password: await bcrypt.hash(password, 10),
+            level: level.toUpperCase(),
+            kode,
+            kodeColor,
+            status: 'Non-Aktif'
         };
 
         // Save user to database
@@ -176,7 +205,10 @@ const createUser = async (req, res) => {
                 nik: newUser.nik,
                 name: newUser.name,
                 email: newUser.email,
-                role_id: newUser.role_id
+                level: newUser.level,
+                kode: newUser.kode,
+                kodeColor: newUser.kodeColor,
+                status: newUser.status
             }
         });
 
@@ -189,7 +221,193 @@ const createUser = async (req, res) => {
         });
     }
 };
+const updateUser = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { nik, name, email, level, status } = req.body;
 
+        // Validate required fields
+        if (!nik || !name || !email || !level || !status) {
+            return res.status(400).json({
+                success: false,
+                message: "Semua field harus diisi"
+            });
+        }
+
+        // Validate level
+        const validLevels = ['SUPERVISOR', 'LINE LEADER', 'TEKNISI'];
+        if (!validLevels.includes(level.toUpperCase())) {
+            return res.status(400).json({
+                success: false,
+                message: "Level harus SUPERVISOR, LINE LEADER, atau TEKNISI"
+            });
+        }
+
+        // Validate status
+        if (!['Aktif', 'Non-Aktif'].includes(status)) {
+            return res.status(400).json({
+                success: false,
+                message: "Status harus Aktif atau Non-Aktif"
+            });
+        }
+
+        // Generate new kode if name changed
+        const kode = name.split(' ')
+            .map(word => word.substring(0, 1))
+            .join('')
+            .toUpperCase();
+
+        // Determine kodeColor based on level
+        let kodeColor;
+        switch(level.toUpperCase()) {
+            case 'SUPERVISOR':
+                kodeColor = 'yellow';
+                break;
+            case 'LINE LEADER':
+                kodeColor = 'red';
+                break;
+            case 'TEKNISI':
+                kodeColor = 'blue';
+                break;
+        }
+
+        const userData = {
+            nik,
+            name,
+            email,
+            level: level.toUpperCase(),
+            kode,
+            kodeColor,
+            status
+        };
+
+        const updatedUser = await userRepository.updateUser(id, userData);
+
+        res.status(200).json({
+            success: true,
+            message: "User berhasil diupdate",
+            data: updatedUser
+        });
+
+    } catch (error) {
+        console.error('Update user error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Gagal mengupdate user',
+            error: error.message
+        });
+    }
+};
+const deleteUser = async (req, res) => {
+    try {
+        const { id } = req.params;
+        await userRepository.deleteUser(id);
+
+        res.status(200).json({
+            success: true,
+            message: "User berhasil dihapus"
+        });
+
+    } catch (error) {
+        console.error('Delete user error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Gagal menghapus user',
+            error: error.message
+        });
+    }
+};
+
+const searchUsers = async (req, res) => {
+    try {
+        // Get search term from query parameters
+        const searchTerm = req.query.q || 
+            (Object.keys(req.query).length > 0 ? Object.keys(req.query)[0] : '');
+
+        if (!searchTerm) {
+            return res.status(400).json({
+                success: false,
+                message: "Masukkan kata kunci pencarian"
+            });
+        }
+
+        const users = await userRepository.searchUsers(searchTerm);
+
+        if (users.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "Tidak ada data pengguna yang sesuai dengan kriteria pencarian"
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: "Data pengguna berhasil ditemukan",
+            data: users
+        });
+
+    } catch (error) {
+        console.error('Search users error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Gagal mencari data pengguna',
+            error: error.message
+        });
+    }
+};
+const filterAndSortUsers = async (req, res) => {
+    try {
+        const { status, sort, level } = req.query;
+        
+        // Define level hierarchy weights
+        const levelWeight = {
+            'SUPERVISOR': 1,
+            'LINE LEADER': 2,
+            'TEKNISI': 3
+        };
+
+        let users = await userRepository.filterUsers(status, level);
+
+        // Sort users based on level hierarchy and/or specified order
+        if (users.length > 0) {
+            users.sort((a, b) => {
+                // First sort by level hierarchy
+                const levelDiff = levelWeight[a.level] - levelWeight[b.level];
+                
+                // If levels are different, use level hierarchy
+                if (levelDiff !== 0) {
+                    return sort === 'desc' ? -levelDiff : levelDiff;
+                }
+                
+                // If levels are same, sort by name
+                return sort === 'desc' ? 
+                    b.name.localeCompare(a.name) : 
+                    a.name.localeCompare(b.name);
+            });
+        }
+
+        if (users.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "Tidak ada data pengguna yang sesuai dengan filter"
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: "Data pengguna berhasil difilter",
+            data: users
+        });
+
+    } catch (error) {
+        console.error('Filter users error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Gagal memfilter data pengguna',
+            error: error.message
+        });
+    }
+};
 const importUsersFromExcel = async (req, res) => {
     try {
         console.log('Files received:', req.files); // Debug log
@@ -254,5 +472,9 @@ module.exports = {
     exportUsersToExcel,
     exportUsersToPDF,
     createUser,
-    importUsersFromExcel
+    importUsersFromExcel,
+    updateUser,
+    deleteUser,
+    searchUsers,
+    filterAndSortUsers
 };

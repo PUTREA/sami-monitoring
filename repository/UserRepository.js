@@ -5,27 +5,32 @@ const { Users } = require("../models/User"); // Pastikan ini mengarah ke model y
 
 const getAllUsers = async () => {
     try {
-        // Mengambil semua data pengguna dari tabel users
         const users = await db.query(
             'SELECT * FROM `users`',
             {
-                type: QueryTypes.SELECT, // Menggunakan QueryTypes.SELECT untuk mengambil data
-                model: Users, // Mengaitkan dengan model Users
-                mapToModel: true, // Memetakan hasil ke model
+                type: QueryTypes.SELECT,
+                model: Users,
+                mapToModel: true,
             }
         );
 
-        console.log('Users:', users); // Menampilkan data pengguna di konsol
-        return users; // Mengembalikan data pengguna
+        // Modify password display for each user
+        const modifiedUsers = users.map(user => ({
+            ...user,
+            password: '*****'
+        }));
+
+        console.log('Users:', modifiedUsers);
+        return modifiedUsers;
     } catch (error) {
-        console.error('Error fetching users:', error); // Menampilkan error di konsol
-        throw error; // Melemparkan error untuk ditangani di tempat lain
+        console.error('Error fetching users:', error);
+        throw error;
     }
 }
 const createUser = async (userData) => {
     try {
         const result = await db.query(
-            'INSERT INTO users (nik, name, email, password, role_id, createdAt, updatedAt) VALUES (:nik, :name, :email, :password, :role_id, NOW(), NOW())',
+            'INSERT INTO users (nik, name, email, password, level, kode, kodeColor, status, createdAt, updatedAt) VALUES (:nik, :name, :email, :password, :level, :kode, :kodeColor, :status, NOW(), NOW())',
             {
                 replacements: userData,
                 type: QueryTypes.INSERT
@@ -37,6 +42,45 @@ const createUser = async (userData) => {
         throw error;
     }
 };
+
+const updateUser = async (id, userData) => {
+    try {
+        const result = await db.query(
+            'UPDATE users SET nik = ?, name = ?, email = ?, level = ?, status = ?, updatedAt = NOW() WHERE id = ?',
+            {
+                replacements: [
+                    userData.nik,
+                    userData.name,
+                    userData.email,
+                    userData.level,
+                    userData.status,
+                    id
+                ],
+                type: QueryTypes.UPDATE
+            }
+        );
+        return { ...userData, id };
+    } catch (error) {
+        console.error('Error updating user:', error);
+        throw error;
+    }
+};
+const deleteUser = async (id) => {
+    try {
+        const result = await db.query(
+            'DELETE FROM users WHERE id = :id',
+            {
+                replacements: { id },
+                type: QueryTypes.DELETE
+            }
+        );
+        return result;
+    } catch (error) {
+        console.error('Error deleting user:', error);
+        throw error;
+    }
+};
+
 const bulkCreateUsers = async (users) => {
     try {
         const result = await db.query(
@@ -60,8 +104,76 @@ const bulkCreateUsers = async (users) => {
         throw error;
     }
 };
+const searchUsers = async (searchTerm) => {
+    try {
+        // Handle case when searchTerm is a query parameter key
+        const actualSearchTerm = searchTerm === undefined ? 
+            Object.keys(searchTerm || {})[0] : searchTerm;
+
+        const query = `
+            SELECT * FROM users 
+            WHERE 
+                LOWER(nik) LIKE LOWER(?) OR
+                LOWER(name) LIKE LOWER(?) OR
+                LOWER(email) LIKE LOWER(?) OR
+                LOWER(level) LIKE LOWER(?) OR
+                LOWER(kode) LIKE LOWER(?) OR
+                LOWER(kodeColor) LIKE LOWER(?) OR
+                LOWER(status) LIKE LOWER(?)
+        `;
+
+        const searchValue = `%${actualSearchTerm}%`;
+        const replacements = Array(7).fill(searchValue);
+
+        const users = await db.query(query, {
+            replacements,
+            type: QueryTypes.SELECT
+        });
+
+        return users.map(user => ({
+            ...user,
+            password: '*****'
+        }));
+    } catch (error) {
+        console.error('Error searching users:', error);
+        throw error;
+    }
+};
+const filterUsers = async (status, level) => {
+    try {
+        let query = 'SELECT * FROM users WHERE 1=1';
+        const replacements = [];
+
+        if (status) {
+            query += ' AND status = ?';
+            replacements.push(status);
+        }
+
+        if (level) {
+            query += ' AND level = ?';
+            replacements.push(level.toUpperCase());
+        }
+
+        const users = await db.query(query, {
+            replacements,
+            type: QueryTypes.SELECT
+        });
+
+        return users.map(user => ({
+            ...user,
+            password: '*****'
+        }));
+    } catch (error) {
+        console.error('Error filtering users:', error);
+        throw error;
+    }
+};
 module.exports = {
     getAllUsers,
     createUser,
-    bulkCreateUsers
+    bulkCreateUsers,
+    updateUser,
+    deleteUser,
+    searchUsers,
+    filterUsers
 };

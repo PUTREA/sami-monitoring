@@ -8,4 +8,8 @@ router.get("/export-excel", UserController.exportUsersToExcel);
 router.get("/export-pdf", UserController.exportUsersToPDF);
 router.post("/create", UserController.createUser);
 router.post("/import", UserController.importUsersFromExcel);
+router.post('/update/:id', UserController.updateUser);
+router.delete('/delete/:id', UserController.deleteUser);
+router.get('/search', UserController.searchUsers);
+router.get('/filter', UserController.filterAndSortUsers);
 module.exports = router;
