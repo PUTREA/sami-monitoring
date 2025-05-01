@@ -329,33 +329,6 @@ const exportMachinesToPDF = async (req, res) => {
     }
 };
 
-// const importMachinesFromExcel = async (req, res) => {
-//     try {
-//         console.log('Files received:', req.files); // Debug log
-
-//         if (!req.files || Object.keys(req.files).length === 0) {
-//             return res.status(400).json({
-//                 success: false,
-//                 message: "No files were uploaded"
-//             });
-//         }
-        
-//         res.status(200).json({
-//             success: true,
-//             message: "File berhasil diunggah"
-//             // message: `Successfully imported ${savedUsers.length} users`,
-//             // data: savedUsers
-//         });
-//     } catch (error) {
-//         console.error('Error importing machines from Excel:', error);
-//         res.status(500).json({
-//             success: false,
-//             message: "Terjadi kesalahan saat mengimpor data mesin dari Excel",
-//             error: error.message
-//         });
-//     }
-// }
-
 const importMachinesFromExcel = async (req, res) => {
     try {
         console.log('Files received:', req.files); // Debug log
