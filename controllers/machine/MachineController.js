@@ -329,38 +329,77 @@ const exportMachinesToPDF = async (req, res) => {
     }
 };
 
+// const importMachinesFromExcel = async (req, res) => {
+//     try {
+//         console.log('Files received:', req.files); // Debug log
+
+//         if (!req.files || Object.keys(req.files).length === 0) {
+//             return res.status(400).json({
+//                 success: false,
+//                 message: "No files were uploaded"
+//             });
+//         }
+        
+//         res.status(200).json({
+//             success: true,
+//             message: "File berhasil diunggah"
+//             // message: `Successfully imported ${savedUsers.length} users`,
+//             // data: savedUsers
+//         });
+//     } catch (error) {
+//         console.error('Error importing machines from Excel:', error);
+//         res.status(500).json({
+//             success: false,
+//             message: "Terjadi kesalahan saat mengimpor data mesin dari Excel",
+//             error: error.message
+//         });
+//     }
+// }
+
 const importMachinesFromExcel = async (req, res) => {
     try {
-        if (!req.files || !req.files.file) {
+        console.log('Files received:', req.files); // Debug log
+        if (!req.files || Object.keys(req.files).length === 0) {
             return res.status(400).json({ success: false, message: "File tidak ditemukan" });
         }
 
         const file = req.files.file;
+        console.log('File details:', file);
+        
+        // Validate file type
+        if (!file.name.match(/\.(xlsx|xls)$/)) {
+            return res.status(400).json({
+                success: false,
+                message: "Please upload a valid Excel file (xlsx or xls)"
+            });
+        }
+        
         const workbook = new Excel.Workbook();
         await workbook.xlsx.load(file.data);
 
-        const worksheet = workbook.worksheets[0]; // Lebih aman daripada getWorksheet(1)
+        const worksheet = workbook.getWorksheet(1); // Lebih aman daripada getWorksheet(1)
         if (!worksheet) {
+            console.error("Worksheet tidak ditemukan");
             return res.status(400).json({ success: false, message: "Worksheet tidak ditemukan" });
         }
 
+        console.log("Worksheet name:", worksheet.name);
+        console.log("Total rows:", worksheet.rowCount);
         const machines = [];
 
         worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
             if (rowNumber === 1) return; // Skip header
 
             const machine = {
-                machine_name: String(row.getCell(2).value || '').trim(),
-                machine_number: String(row.getCell(3).value || '').trim(),
-                location: String(row.getCell(4).value || '').trim(),
-                carline: String(row.getCell(5).value || '').trim(),
+                machine_name: row.getCell(2).value,
+                machine_number: row.getCell(3).value,
+                location: row.getCell(4).value,
+                carline: row.getCell(5).value,
             };
 
             console.log(`Row ${rowNumber} ➜`, machine); // Log isi row
 
-            if (machine.machine_number && machine.machine_name) {
-                machines.push(machine);
-            }
+            machines.push(machine);
         });
 
         console.log("🧾 Total mesin terdeteksi:", machines.length);

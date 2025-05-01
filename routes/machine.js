@@ -6,6 +6,7 @@ const { authMiddleware, roleMiddleware } = require('../middlewares/auth');
 // Endpoint untuk machines
 router.get("/", MachineController.getAllMachines);
 router.post("/", MachineController.createMachine);
+router.post("/import", MachineController.importMachinesFromExcel);
 router.post("/:id", MachineController.updateMachine);
 router.delete("/:id", MachineController.deleteMachine);
 
@@ -15,7 +16,6 @@ router.get("/filter", MachineController.filterMachines);
 
 router.get("/export-excel", MachineController.exportMachinesToExcel);
 router.get("/export-pdf", MachineController.exportMachinesToPDF);
-router.post("/import", MachineController.importMachinesFromExcel);
 
 // Endpoint untuk get semua machines dengan middleware auth dan role checke
 // router.get("/", authMiddleware, MachineController.getAllMachines);

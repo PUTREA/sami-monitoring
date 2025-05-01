@@ -143,23 +143,14 @@ const filterMachines = async (filters) => {
 
 const bulkCreateMachine = async (machines) => {
     try {
-        if (!Array.isArray(machines) || machines.length === 0) return [];
-        const values = machines.map(machine => [
-            machine.machine_number,
-            machine.machine_name,
-            machine.location || null,
-            machine.carline || null,
-            new Date(),
-            new Date()
-        ]);
         const result = await db.query(
             'INSERT INTO machines (machine_number, machine_name, location, carline, createdAt, updatedAt) VALUES ?',
             {
-                replacements: [values],
+                replacements: [machines.map(machine => [machine.machine_number, machine.machine_name, machine.location, machine.carline, new Date(), new Date()])],
                 type: QueryTypes.INSERT
             }
         );
-        return machines;
+        return 
     } catch (error) {
         console.error('Error bulk creating machines:', error);
         throw error;
