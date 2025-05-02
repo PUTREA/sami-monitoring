@@ -148,7 +148,7 @@ const deleteMachine = async (req, res) => {
 
 const searchMachines = async (req, res) => {
     const searchTerm = req.query.q|| 
-    (Object.keys(req.query).length > 0 ? Object.keys(req.query)[0] : '');;
+    (Object.keys(req.query).length > 0 ? Object.keys(req.query)[0] : '');
     if (!searchTerm) {
         return res.status(400).json({
             success: false,
