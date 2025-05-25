@@ -332,68 +332,121 @@ const exportMachinesToPDF = async (req, res) => {
 const importMachinesFromExcel = async (req, res) => {
     try {
         console.log('Files received:', req.files); // Debug log
+
         if (!req.files || Object.keys(req.files).length === 0) {
-            return res.status(400).json({ success: false, message: "File tidak ditemukan" });
+            return res.status(400).json({
+                success: false,
+                message: "Tidak ada file yang diunggah"
+            });
         }
 
         const file = req.files.file;
-        console.log('File details:', file);
-        
-        // Validate file type
+        console.log('File details:', file); // Debug log
+
+        // Validasi file type
         if (!file.name.match(/\.(xlsx|xls)$/)) {
             return res.status(400).json({
                 success: false,
-                message: "Please upload a valid Excel file (xlsx or xls)"
+                message: "Silakan unggah file Excel yang valid (xlsx atau xls)"
             });
         }
-        
+
         const workbook = new Excel.Workbook();
         await workbook.xlsx.load(file.data);
-
-        const worksheet = workbook.getWorksheet(1); // Lebih aman daripada getWorksheet(1)
+        
+        const worksheet = workbook.getWorksheet(1);
         if (!worksheet) {
-            console.error("Worksheet tidak ditemukan");
-            return res.status(400).json({ success: false, message: "Worksheet tidak ditemukan" });
-        }
-
-        console.log("Worksheet name:", worksheet.name);
-        console.log("Total rows:", worksheet.rowCount);
-        const machines = [];
-
-        worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
-            if (rowNumber === 1) return; // Skip header
-
-            const machine = {
-                machine_name: row.getCell(2).value,
-                machine_number: row.getCell(3).value,
-                location: row.getCell(4).value,
-                carline: row.getCell(5).value,
-            };
-
-            console.log(`Row ${rowNumber} ➜`, machine); // Log isi row
-
-            machines.push(machine);
-        });
-
-        console.log("🧾 Total mesin terdeteksi:", machines.length);
-
-        if (machines.length === 0) {
             return res.status(400).json({
                 success: false,
-                message: "Nomor mesin dan nama mesin harus diisi"
+                message: "File Excel tidak memiliki worksheet yang valid"
             });
         }
 
-        await machineRepository.bulkCreateMachine(machines);
+        const machines = [];
+        
+        // Deteksi header untuk menentukan kolom yang benar
+        let headerRow = worksheet.getRow(1);
+        let machineNameCol = 2; // Default kolom 2
+        let machineNumberCol = 3; // Default kolom 3
+        let locationCol = 4; // Default kolom 4
+        let carlineCol = 5; // Default kolom 5
+
+        // Coba deteksi header berdasarkan nama kolom
+        for (let i = 1; i <= headerRow.cellCount; i++) {
+            const cellValue = headerRow.getCell(i).value;
+            if (cellValue) {
+                const header = cellValue.toString().toLowerCase();
+                if (header.includes('nama') || header.includes('name')) {
+                    machineNameCol = i;
+                } else if (header.includes('nomor') || header.includes('number')) {
+                    machineNumberCol = i;
+                } else if (header.includes('lokasi') || header.includes('location')) {
+                    locationCol = i;
+                } else if (header.includes('carline')) {
+                    carlineCol = i;
+                }
+            }
+        }
+        
+        worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
+            if (rowNumber > 1) { // Skip header row
+                try {
+                    // Ambil nilai dari sel
+                    const machineNameValue = row.getCell(machineNameCol).value;
+                    const machineNumberValue = row.getCell(machineNumberCol).value;
+                    const locationValue = row.getCell(locationCol).value;
+                    const carlineValue = row.getCell(carlineCol).value;
+                    
+                    // Buat objek mesin dengan penanganan nilai null/undefined
+                    const machine = {
+                        machine_name: machineNameValue ? machineNameValue.toString() : '',
+                        machine_number: machineNumberValue ? machineNumberValue.toString() : '',
+                        location: locationValue ? locationValue.toString() : '',
+                        carline: carlineValue ? carlineValue.toString() : ''
+                    };
+                    
+                    machines.push(machine);
+                } catch (err) {
+                    console.error(`Error processing row ${rowNumber}:`, err);
+                    // Lanjutkan ke baris berikutnya
+                }
+            }
+        });
+
+        // Validasi data
+        const invalidData = machines.filter(machine => !machine.machine_number || !machine.machine_name);
+        if (invalidData.length > 0) {
+            return res.status(400).json({
+                success: false,
+                message: "Beberapa data tidak valid. Nomor mesin dan nama mesin harus diisi",
+                invalidData
+            });
+        }
+
+        // Simpan mesin ke database
+        const savedMachines = [];
+        for (const machine of machines) {
+            try {
+                const savedMachine = await machineRepository.createMachine(machine);
+                savedMachines.push(savedMachine);
+            } catch (error) {
+                console.error('Error saving machine:', error);
+            }
+        }
 
         res.status(200).json({
             success: true,
-            message: `Berhasil mengimpor ${machines.length} mesin`,
-            data: machines
+            message: `Berhasil mengimpor ${savedMachines.length} mesin`,
+            data: savedMachines
         });
-    } catch (err) {
-        console.error("❌ Import error:", err);
-        res.status(500).json({ success: false, message: "Gagal mengimpor", error: err.message });
+
+    } catch (error) {
+        console.error('Import error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Gagal mengimpor data mesin',
+            error: error.message
+        });
     }
 };
 
