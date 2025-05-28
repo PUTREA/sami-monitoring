@@ -17,6 +17,19 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: false,
       },
+      status: {
+        type: Sequelize.ENUM('Aktif', 'Non-Aktif'),
+        allowNull: false,
+        defaultValue: 'Non-Aktif'
+      },
+      kode: {
+        type: Sequelize.STRING,
+        allowNull: false,
+      },
+      kodeColor: {
+        type: Sequelize.ENUM('yellow', 'red', 'blue'),
+        allowNull: false
+      },
       email: {
         type: Sequelize.STRING,
         allowNull: false,
@@ -25,8 +38,8 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: false,
       },
-      role_id: {
-        type: Sequelize.INTEGER.UNSIGNED,
+      level: {
+        type: Sequelize.ENUM('SUPERVISOR', 'LINE LEADER', 'TEKNISI'),
         allowNull: false,
       },
       createdAt: {

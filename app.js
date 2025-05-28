@@ -2,7 +2,7 @@ const express = require("express");
 const path = require("path");
 const logger = require("morgan");
 require("dotenv").config();
-
+const fileUpload = require('express-fileupload');
 
 const indexRouter = require("./routes/index");
 const authRoutes = require("./routes/auth");
@@ -15,7 +15,10 @@ const app = express();
 app.use(logger("dev"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-
+app.use(fileUpload({
+  createParentPath: true,
+  debug: true
+}));
 // Routing
 app.use("/", indexRouter);
 app.use("/api/test", indexRouter);
