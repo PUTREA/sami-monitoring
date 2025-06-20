@@ -67,6 +67,46 @@ const getMroRequestById = async (id) => {
 const getpic = async () => {
   
 }
+
+// Accept MRO Request oleh teknisi dan langsung mulai mengerjakan
+const acceptMroRequest = async (id, pic, waktuMulai) => {
+  return await db.query(
+    `UPDATE mro_requests 
+     SET status = 'sedang proses', 
+         PIC = :pic, 
+         waktu_mulai = :waktuMulai,
+         repair = 'sedang dikerjakan',
+         menunggu_qa = 'menunggu',
+         menunggu_part = 'menunggu',
+         updated_at = NOW()
+     WHERE id = :id`,
+    {
+      replacements: { id, pic, waktuMulai },
+      type: QueryTypes.UPDATE,
+    },
+  )
+}
+
+// Complete MRO Request
+const completeMroRequest = async (id, pic, waktuSelesai) => {
+  return await db.query(
+    `UPDATE mro_requests 
+     SET status = 'selesai', 
+         PIC = :pic, 
+         waktu_selesai = :waktuSelesai,
+         repair = 'selesai',
+         updated_at = NOW()
+     WHERE id = :id`,
+    {
+      replacements: {
+        id,
+        pic,
+        waktuSelesai,
+      },
+      type: QueryTypes.UPDATE,
+    }
+  );
+};
   
 module.exports = {
   getProblemGroups,
@@ -74,5 +114,7 @@ module.exports = {
   getMachineDetailsByLocation,
   createMroRequest,
   getMroRequestById,
-  getUserByNik
+  getUserByNik,
+  acceptMroRequest,
+  completeMroRequest,
 };

@@ -24,9 +24,6 @@ const getMachineDetails = async (req, res) => {
   }
 };
 
-
-
-
 const createMroRequest = async (req, res) => {
   try {
     const { grouping_problem, location, machine_name, machine_no, carline, notes } = req.body;
@@ -48,10 +45,10 @@ const createMroRequest = async (req, res) => {
       carline,
       notes,
       date: now.format('YYYY-MM-DD'),
-      status: 'sedang proses',
+      status: 'belum ditangani',
       PIC: kode,
-      waktu_mulai: now.format('HH:mm:ss'),
-      waktu_selesai: 'menghitung',
+      waktu_mulai: now.format('YYYY-MM-DD HH:mm:ss'),
+      waktu_selesai: null,
       time_off: 0,
       repair: 'menunggu',
       menunggu_qa: 'menunggu',
@@ -76,15 +73,168 @@ const createMroRequest = async (req, res) => {
   }
 };
 
-module.exports = {
-  createMroRequest
+const acceptMroRequest = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const nik = req.user.nik;
+
+    if (req.user.role !== "teknisi") {
+      return res.status(403).json({
+        success: false,
+        message: "Hanya teknisi yang dapat menerima MRO request",
+      });
+    }
+
+    const existingRequest = await mroRepo.getMroRequestById(id);
+    if (!existingRequest || existingRequest.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "MRO request tidak ditemukan",
+      });
+    }
+
+    const request = existingRequest[0];
+
+    if (request.status !== "belum ditangani") {
+      return res.status(400).json({
+        success: false,
+        message: "MRO request sudah ditangani atau tidak dapat diterima",
+      });
+    }
+
+    const user = await mroRepo.getUserByNik(nik);
+    if (!user || user.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Data teknisi tidak ditemukan",
+      });
+    }
+
+    const kode = user[0].kode;
+
+    // KEMBALI ke UTC untuk konsistensi dengan database
+    const now = moment.utc();
+    const waktuMulai = now.format('YYYY-MM-DD HH:mm:ss');
+
+    await mroRepo.acceptMroRequest(id, kode, waktuMulai);
+
+    const updatedRequest = await mroRepo.getMroRequestById(id);
+
+    res.status(200).json({
+      success: true,
+      message: "MRO request berhasil diterima dan pekerjaan dimulai",
+      data: {
+        ...updatedRequest[0],
+        waktu_mulai: waktuMulai,
+      },
+    });
+  } catch (error) {
+    console.error("Accept MRO request error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Gagal menerima MRO request",
+      error: error.message,
+    });
+  }
 };
 
+const completeMroRequest = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const nik = req.user.nik;
 
+    if (req.user.role !== "teknisi") {
+      return res.status(403).json({
+        success: false,
+        message: "Hanya teknisi yang dapat menyelesaikan MRO request",
+      });
+    }
 
+    const existingRequest = await mroRepo.getMroRequestById(id);
+    if (!existingRequest || existingRequest.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "MRO request tidak ditemukan",
+      });
+    }
+
+    const request = existingRequest[0];
+
+    if (request.status !== "sedang proses") {
+      return res.status(400).json({
+        success: false,
+        message: "MRO request belum diterima atau sudah selesai",
+      });
+    }
+
+    const user = await mroRepo.getUserByNik(nik);
+    if (!user || user.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Data teknisi tidak ditemukan",
+      });
+    }
+
+    const kode = user[0].kode;
+
+    // Gunakan UTC untuk konsistensi dengan database
+    const now = moment.utc();
+    const waktuSelesai = now.format('YYYY-MM-DD HH:mm:ss');
+
+    // Parse waktu_mulai sebagai UTC (karena dari database dalam format UTC)
+    const waktuMulai = request.waktu_mulai ? moment.utc(request.waktu_mulai) : null;
+
+    let totalWaktuPerbaikan = "00:00:00";
+    let totalDetikPerbaikan = 0;
+
+    if (waktuMulai && waktuMulai.isValid() && now.isAfter(waktuMulai)) {
+      const duration = moment.duration(now.diff(waktuMulai));
+      
+      // Hitung total jam, menit, dan detik dengan benar
+      const totalSeconds = Math.floor(duration.asSeconds());
+      
+      if (totalSeconds > 0) {
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+
+        // Format dengan padding zero
+        totalWaktuPerbaikan = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        totalDetikPerbaikan = totalSeconds;
+        
+      }
+    }
+
+    // Simpan waktu selesai ke DB
+    await mroRepo.completeMroRequest(id, kode, waktuSelesai);
+
+    // Ambil data terbaru dari database
+    const updatedRequest = await mroRepo.getMroRequestById(id);
+
+    res.status(200).json({
+      success: true,
+      message: "MRO request berhasil diselesaikan",
+      data: {
+        ...updatedRequest[0],
+        waktu_selesai: waktuSelesai,
+        total_waktu_perbaikan: totalWaktuPerbaikan,
+        total_detik_perbaikan: totalDetikPerbaikan,
+      },
+    });
+  } catch (error) {
+    console.error("Complete MRO request error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Gagal menyelesaikan MRO request",
+      error: error.message,
+    });
+  }
+};
 
 module.exports = {
   getFormOptions,
   getMachineDetails,
-  createMroRequest
+  createMroRequest,
+  acceptMroRequest,
+  completeMroRequest
 };

@@ -10,7 +10,11 @@ module.exports = {
         name: "Supervisor",
         email: "supervisor@example.com",
         password: await bcrypt.hash("password123", 10), // Hash password
-        role_id: 1, // ID role admin
+        status: "Aktif",
+        kode: "spv-1",
+        kodeColor: "blue",
+        level: "SUPERVISOR",
+        // role_id: 1, // ID role admin
         createdAt: new Date(),
         updatedAt: new Date(),
       },
@@ -19,7 +23,11 @@ module.exports = {
         name: "Line leader",
         email: "lineleader@example.com",
         password: await bcrypt.hash("password123", 10), // Hash password
-        role_id: 2, // ID role user
+        status: "Aktif",
+        kode: "leadline-1",
+        kodeColor: "red",
+        level: "LINE LEADER",
+        // role_id: 2, // ID role user
         createdAt: new Date(),
         updatedAt: new Date(),
       },
@@ -28,7 +36,11 @@ module.exports = {
         name: "Teknisi",
         email: "teknisi@example.com",
         password: await bcrypt.hash("password123", 10), // Hash password
-        role_id: 3, // ID role user
+        status: "Aktif",
+        kode: "tkns-1",
+        kodeColor: "yellow",
+        level: "TEKNISI",
+        // role_id: 3, // ID role user
         createdAt: new Date(),
         updatedAt: new Date(),
       }
