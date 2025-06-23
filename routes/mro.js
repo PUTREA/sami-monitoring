@@ -17,4 +17,7 @@ router.post("/request/:id/accept", authMiddleware, mroController.acceptMroReques
 // Complete MRO request (hanya teknisi)
 router.post("/request/:id/complete", authMiddleware, mroController.completeMroRequest)
 
+// ...
+router.get('/carline-frequent', mroController.getMostFrequentCarline);
+router.get('/summary', mroController.getMroRequestSummary);
 module.exports = router;

@@ -115,7 +115,60 @@ const completeMroRequest = async (id, pic, waktuSelesai) => {
     }
   );
 };
-  
+const getMroRequestSummary = async (period = 'day', year = null, month = null) => {
+  let groupBy, dateFormat, where = '', replacements = {};
+  if (period === 'day') {
+    groupBy = 'DATE(date)';
+    dateFormat = '%Y-%m-%d';
+  } else if (period === 'week') {
+    groupBy = 'YEAR(date), WEEK(date)';
+    dateFormat = '%x-W%v';
+  } else if (period === 'month') {
+    groupBy = 'YEAR(date), MONTH(date)';
+    dateFormat = '%Y-%m';
+  } else if (period === 'year') {
+    groupBy = 'YEAR(date)';
+    dateFormat = '%Y';
+  } else {
+    groupBy = 'DATE(date)';
+    dateFormat = '%Y-%m-%d';
+  }
+  if (year) {
+    where += ' AND YEAR(date) = :year';
+    replacements.year = year;
+  }
+  if (month) {
+    where += ' AND MONTH(date) = :month';
+    replacements.month = month;
+  }
+  const sql = `SELECT DATE_FORMAT(date, '${dateFormat}') as period, status, COUNT(*) as total
+    FROM mro_requests
+    WHERE 1=1 ${where}
+    GROUP BY period, status
+    ORDER BY period ASC`;
+  return await db.query(sql, { replacements, type: QueryTypes.SELECT });
+};
+
+// Summary carline paling sering rusak
+const getMostFrequentCarline = async (limit = 10, year = null, month = null) => {
+  let where = '', replacements = {};
+  if (year) {
+    where += ' AND YEAR(date) = :year';
+    replacements.year = year;
+  }
+  if (month) {
+    where += ' AND MONTH(date) = :month';
+    replacements.month = month;
+  }
+  const sql = `SELECT carline, COUNT(*) as total
+    FROM mro_requests
+    WHERE 1=1 AND carline IS NOT NULL AND carline != '' ${where}
+    GROUP BY carline
+    ORDER BY total DESC
+    LIMIT :limit`;
+  replacements.limit = limit;
+  return await db.query(sql, { replacements, type: QueryTypes.SELECT });
+};
 module.exports = {
   getProblemGroups,
   getProdNos,
@@ -125,4 +178,10 @@ module.exports = {
   getUserByNik,
   acceptMroRequest,
   completeMroRequest,
+  getMroRequestSummary,
+  getMostFrequentCarline,
 };
+
+// Summary agregasi MRO request per hari/minggu/bulan/tahun
+
+

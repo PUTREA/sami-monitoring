@@ -231,10 +231,30 @@ const completeMroRequest = async (req, res) => {
   }
 };
 
+const getMroRequestSummary = async (req, res) => {
+  try {
+    const { period = 'day', year, month } = req.query;
+    const data = await mroRepo.getMroRequestSummary(period, year, month);
+    res.json({ success: true, data });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Gagal mengambil summary MRO request', error: error.message });
+  }
+};
+const getMostFrequentCarline = async (req, res) => {
+  try {
+    const { limit = 10, year, month } = req.query;
+    const data = await mroRepo.getMostFrequentCarline(Number(limit), year, month);
+    res.json({ success: true, data });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Gagal mengambil data carline paling sering rusak', error: error.message });
+  }
+};
 module.exports = {
   getFormOptions,
   getMachineDetails,
   createMroRequest,
   acceptMroRequest,
-  completeMroRequest
+  completeMroRequest,
+  getMroRequestSummary,
+  getMostFrequentCarline,
 };
