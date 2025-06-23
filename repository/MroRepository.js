@@ -39,15 +39,23 @@ const getUserByNik = async (nik) => {
   );
 };
 
+// Helper untuk generate tracking ID 8 digit
+function generateTrackingId() {
+  return Math.floor(10000000 + Math.random() * 90000000).toString();
+}
+
 // Buat MRO Request
 const createMroRequest = async (data) => {
+  // Tambahkan tracking_id ke data
+  const tracking_id = generateTrackingId();
+  const dataWithTracking = { ...data, tracking_id };
   return await db.query(
     `INSERT INTO mro_requests 
-     (grouping_problem, location, machine_name, machine_no, carline, notes, date, status, PIC, waktu_mulai, waktu_selesai, time_off, repair, menunggu_qa, menunggu_part, total_waktu_perbaikan)
+     (grouping_problem, location, machine_name, machine_no, carline, notes, date, status, PIC, waktu_mulai, waktu_selesai, time_off, repair, menunggu_qa, menunggu_part, total_waktu_perbaikan, tracking_id)
      VALUES 
-     (:grouping_problem, :location, :machine_name, :machine_no, :carline, :notes, :date, :status, :PIC, :waktu_mulai, :waktu_selesai, :time_off, :repair, :menunggu_qa, :menunggu_part, :total_waktu_perbaikan)`,
+     (:grouping_problem, :location, :machine_name, :machine_no, :carline, :notes, :date, :status, :PIC, :waktu_mulai, :waktu_selesai, :time_off, :repair, :menunggu_qa, :menunggu_part, :total_waktu_perbaikan, :tracking_id)`,
     {
-      replacements: data,
+      replacements: dataWithTracking,
       type: QueryTypes.INSERT
     }
   );
