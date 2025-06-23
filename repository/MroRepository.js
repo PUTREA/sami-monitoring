@@ -115,7 +115,52 @@ const completeMroRequest = async (id, pic, waktuSelesai) => {
     }
   );
 };
-  
+// Ambil semua MRO request, dengan optional search berdasarkan grouping_problem
+const getAllMroRequests = async (searchTerm) => {
+  let query = 'SELECT * FROM mro_requests';
+  const replacements = {};
+  if (searchTerm) {
+    query += ' WHERE grouping_problem LIKE :searchTerm';
+    replacements.searchTerm = `%${searchTerm}%`;
+  }
+  query += ' ORDER BY id DESC';
+  return await db.query(query, {
+    replacements,
+    type: QueryTypes.SELECT
+  });
+};
+// Search MRO requests by multiple filters
+const searchMroRequests = async (filters) => {
+  let query = 'SELECT * FROM mro_requests WHERE 1=1';
+  const replacements = {};
+  if (filters.problem) {
+    query += ' AND grouping_problem LIKE :problem';
+    replacements.problem = `%${filters.problem}%`;
+  }
+  if (filters.status) {
+    query += ' AND status = :status';
+    replacements.status = filters.status;
+  }
+  if (filters.carline) {
+    query += ' AND carline = :carline';
+    replacements.carline = filters.carline;
+  }
+  if (filters.pic) {
+    query += ' AND PIC = :pic';
+    replacements.pic = filters.pic;
+  }
+  query += ' ORDER BY id DESC';
+  return await db.query(query, {
+    replacements,
+    type: QueryTypes.SELECT
+  });
+};
+
+// Get count of MRO requests grouped by status
+const getStatusSummary = async () => {
+  const query = `SELECT status, COUNT(*) as count FROM mro_requests GROUP BY status`;
+  return await db.query(query, { type: QueryTypes.SELECT });
+};
 module.exports = {
   getProblemGroups,
   getProdNos,
@@ -125,4 +170,7 @@ module.exports = {
   getUserByNik,
   acceptMroRequest,
   completeMroRequest,
+  getAllMroRequests,
+  searchMroRequests,
+  getStatusSummary
 };

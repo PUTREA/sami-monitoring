@@ -231,10 +231,71 @@ const completeMroRequest = async (req, res) => {
   }
 };
 
+// Overview API: Ambil semua MRO request, dengan fitur search berdasarkan problem
+const getOverview = async (req, res) => {
+  try {
+    const search = req.query.search || '';
+    const requests = await mroRepo.getAllMroRequests(search);
+    res.status(200).json({
+      success: true,
+      message: 'Data overview berhasil diambil',
+      data: requests
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Gagal mengambil data overview',
+      error: error.message
+    });
+  }
+};
+// Search API: Cari MRO request berdasarkan problem, status, carline, PIC
+const searchMroRequests = async (req, res) => {
+  try {
+    const filters = {
+      problem: req.query.problem || '',
+      status: req.query.status || '',
+      carline: req.query.carline || '',
+      pic: req.query.pic || ''
+    };
+    const requests = await mroRepo.searchMroRequests(filters);
+    res.status(200).json({
+      success: true,
+      message: 'Data hasil pencarian berhasil diambil',
+      data: requests
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Gagal mengambil data hasil pencarian',
+      error: error.message
+    });
+  }
+};
+// Summary API: Get count of MRO requests grouped by status
+const getStatusSummary = async (req, res) => {
+  try {
+    const summary = await mroRepo.getStatusSummary();
+    res.status(200).json({
+      success: true,
+      message: 'Summary status berhasil diambil',
+      data: summary
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Gagal mengambil summary status',
+      error: error.message
+    });
+  }
+};
 module.exports = {
   getFormOptions,
   getMachineDetails,
   createMroRequest,
   acceptMroRequest,
-  completeMroRequest
+  completeMroRequest,
+  getOverview,
+  searchMroRequests,
+  getStatusSummary
 };
