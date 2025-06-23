@@ -54,7 +54,7 @@ module.exports = {
         allowNull: true
       },
       time_off: {
-        type: Sequelize.DATE,
+        type: Sequelize.TIME,
         allowNull: true
       },
       repair: {
@@ -70,7 +70,7 @@ module.exports = {
         allowNull: true
       },
       total_waktu_perbaikan: {
-        type: Sequelize.DATE,
+        type: Sequelize.TIME,
         allowNull: true
       },
       // Timestamps untuk created_at dan updated_at, jika ada pada d
