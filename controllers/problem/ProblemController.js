@@ -59,7 +59,7 @@ const createProblem = async (req, res) => {
             data: {
                 id: result[0], // ambil insertId
                 no: problemData.no,
-                problem: problemData.grouping_problem
+                problem: problemData.problem
             }
         });
     } catch (error) {
@@ -83,7 +83,7 @@ const updateProblem = async (req, res) => {
             data: {
                 id: result[0], 
                 no: problemData.no,
-                problem: problemData.grouping_problem
+                problem: problemData.problem
             },
         });
     } catch (error) {

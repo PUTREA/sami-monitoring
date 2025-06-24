@@ -7,6 +7,6 @@ router.get('/problems/:id', problemController.getProblemById);
 router.post('/problems', problemController.createProblem);
 router.put('/problems/:id', problemController.updateProblem);
 router.delete('/problems/:id', problemController.deleteProblem);
-router.get('/problems/export', problemController.exportProblemsToPDF);
+router.post('/problems/export', problemController.exportProblemsToPDF);
 
 module.exports = router;

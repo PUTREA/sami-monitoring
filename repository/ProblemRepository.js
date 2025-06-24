@@ -35,11 +35,11 @@ const getProblemById = async (id) => {
 const createProblem = async (problemData) => {
     try {
         const result = await db.query(
-            'INSERT INTO problems (no, grouping_problem, createdAt, updatedAt) VALUES (:no, :grouping_problem, :createdAt, :updatedAt)',
+            'INSERT INTO problems (no, problem, createdAt, updatedAt) VALUES (:no, :problem, :createdAt, :updatedAt)',
             {
                 replacements: {
                     no: problemData.no,
-                    grouping_problem: problemData.grouping_problem,
+                    problem: problemData.problem,
                     createdAt: new Date(),
                     updatedAt: new Date()
                 },
@@ -55,7 +55,7 @@ const createProblem = async (problemData) => {
 const updateProblem = async (id, problemData) => {
     try {
         const result = await db.query(
-            'UPDATE problems SET no = :no, grouping_problem = :grouping_problem WHERE id = :id',
+            'UPDATE problems SET no = :no, problem = :problem WHERE id = :id',
             {
                 replacements: { ...problemData, id },
                 type: QueryTypes.UPDATE
