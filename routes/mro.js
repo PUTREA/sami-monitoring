@@ -17,4 +17,13 @@ router.post("/request/:id/accept", authMiddleware, mroController.acceptMroReques
 // Complete MRO request (hanya teknisi)
 router.post("/request/:id/complete", authMiddleware, mroController.completeMroRequest)
 
+// Overview API
+router.get('/overview', mroController.getOverview);
+
+// Search API
+router.get('/search', mroController.searchMroRequests);
+
+// Status Summary API
+router.get('/status-summary', mroController.getStatusSummary);
+
 module.exports = router;
